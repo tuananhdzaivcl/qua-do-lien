@@ -104,10 +104,11 @@
             border-radius: 10px;
             color: var(--neon-cyan);
             font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
+            font-size: 14px;
             text-align: center;
             margin-bottom: 15px;
             transition: all 0.3s;
+            text-transform: uppercase;
         }
 
         .key-input:focus {
@@ -385,12 +386,23 @@
 
 <script>
     // ==========================================
-    // HỆ THỐNG KEY
+    // HỆ THỐNG KEY BẢO MẬT (MÃ HÓA BASE64)
     // ==========================================
-    // Key: ADMINTUANANH
-    const SECRET_TEXT = "ADMINTUANANH";
-    const textToBinary = (text) => text.split('').map(c => c.charCodeAt(0).toString(2).padStart(8, '0')).join('');
-    const VALID_KEY_BINARY = textToBinary(SECRET_TEXT);
+    // Key gốc: FHAL-BBQH-GALK-8888
+    // Đã mã hóa thành Base64 và chia nhỏ để tránh F12 đọc trực tiếp
+    const _keyParts = ["RkhB", "TC1C", "QlFI", "LUdB", "TEst", "ODg4", "OA=="];
+    const _secretBase64 = _keyParts.join('');
+
+    function validateKey(input) {
+        // Xóa khoảng trắng, đưa về chữ in hoa
+        let cleanInput = input.replace(/\s+/g, '').toUpperCase();
+        try {
+            // Mã hóa input thành Base64 và so sánh
+            return btoa(cleanInput) === _secretBase64;
+        } catch (e) {
+            return false;
+        }
+    }
 
     const lockScreen = document.getElementById('lock-screen');
     const mainApp = document.getElementById('main-app');
@@ -415,8 +427,9 @@
     }
 
     function checkLogin() {
+        // Lưu chuỗi base64 vào localStorage để lần sau vào không cần nhập lại
         const savedKey = localStorage.getItem('lc79_vip_key');
-        if (savedKey === VALID_KEY_BINARY) {
+        if (savedKey === _secretBase64) {
             startApp();
         } else {
             lockScreen.style.display = 'flex';
@@ -425,21 +438,11 @@
     }
 
     btnAuth.addEventListener('click', () => {
-        let input = keyInput.value.replace(/\s+/g, '');
+        let input = keyInput.value.trim();
         if (!input) return;
 
-        let isValid = false;
-        // Check nếu nhập nhị phân
-        if (/^[01]+$/.test(input)) {
-            if (input === VALID_KEY_BINARY) isValid = true;
-        } 
-        // Check nếu nhập chữ
-        else {
-            if (textToBinary(input.toUpperCase()) === VALID_KEY_BINARY) isValid = true;
-        }
-
-        if (isValid) {
-            localStorage.setItem('lc79_vip_key', VALID_KEY_BINARY);
+        if (validateKey(input)) {
+            localStorage.setItem('lc79_vip_key', _secretBase64);
             errorMsg.style.display = 'none';
             startApp();
         } else {
@@ -694,6 +697,9 @@
             DRAG.xOffset = DRAG.currentX; DRAG.yOffset = DRAG.currentY;
             DRAG.el.style.transform = `translate3d(${DRAG.currentX}px, ${DRAG.currentY}px, 0)`;
         }
+    };
+
+    // Check login ngay khi tải trang
     window.onload = checkLogin;
     
     window.addEventListener('beforeunload', () => { 
